@@ -1,0 +1,46 @@
+name: gym-watch
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: "初回確認用（1回だけ実行して画面テキストを出力）"
+        type: boolean
+        default: false
+
+concurrency:
+  group: gym-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+      # 監視する日付。例: "2026-10-14" / "2026-10-20,2026-10-27..2026-10-31"
+      DATES: "2026-10-14"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install playwright && playwright install --with-deps chromium
+      - uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: gym-state-${{ github.run_id }}
+          restore-keys: gym-state-
+      - name: debug run
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug }}
+        run: python gym_watch.py --dates "$DATES" --once --debug
+      - name: watch
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.debug) }}
+        run: python gym_watch.py --dates "$DATES" --duration 270 --state state.json
+      - uses: actions/cache/save@v4
+        if: ${{ always() && hashFiles('state.json') != '' }}
+        with:
+          path: state.json
+          key: gym-state-${{ github.run_id }}
