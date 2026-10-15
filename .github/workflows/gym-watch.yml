@@ -21,7 +21,7 @@ jobs:
     env:
       NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
       # 監視する日付。例: "2026-10-14" / "2026-10-20,2026-10-27..2026-10-31"
-      DATES: "2026-10-14"
+      DATES: "2026-10-15"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
